@@ -30,6 +30,9 @@ desktop.ini
 .env
 .env.*
 
+# Large research assets are intentionally tracked in this repository via Git LFS:
+# Dataset/, Catfish_baby_images/, artifacts/, outputs/, and runs/
+
 # Exported binaries and base pretrained weights
 yolov8s.pt
 *.pth

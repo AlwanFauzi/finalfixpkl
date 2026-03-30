@@ -1,3 +1,4 @@
+# Large research assets are stored via Git LFS for GitHub compatibility.
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.jpeg filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
