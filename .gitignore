@@ -30,17 +30,8 @@ desktop.ini
 .env
 .env.*
 
-# Training outputs and generated artifacts
-runs/
-artifacts/
-outputs/
-
-# Dataset and raw images
-Dataset/
-Catfish_baby_images/
-
-# Model weights and exported binaries
-*.pt
+# Exported binaries and base pretrained weights
+yolov8s.pt
 *.pth
 *.onnx
 *.engine

@@ -1,0 +1,2 @@
+n_samples,n_clusters,silhouette_score,davies_bouldin_score,calinski_harabasz_score,largest_cluster_share,smallest_cluster_share
+2431,3,0.42394039342377815,0.7955838161737915,2031.3426887991732,0.5100781571369807,0.19086795557383793

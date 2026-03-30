@@ -1,0 +1,4 @@
+Urutan ukuran berdasarkan rata-rata area adalah Fries (cluster 1) < Fingerling (cluster 2) < Juvenile (cluster 0).
+Fries pada cluster 1 mencakup 727 deteksi (29.9%) dengan rata-rata area 207,262 px2, median 212,856 px2, rentang 47,077-339,680 px2, dan bounding box relatif seimbang antara lebar dan tinggi.
+Fingerling pada cluster 2 mencakup 464 deteksi (19.1%) dengan rata-rata area 306,573 px2, median 308,308 px2, rentang 145,110-509,092 px2, dan bounding box cenderung lebih melebar secara horizontal.
+Juvenile pada cluster 0 mencakup 1240 deteksi (51.0%) dengan rata-rata area 438,271 px2, median 428,439 px2, rentang 238,270-841,641 px2, dan bounding box relatif seimbang antara lebar dan tinggi.
