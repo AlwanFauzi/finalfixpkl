@@ -409,6 +409,11 @@ Dependensi utama yang digunakan:
 - Matplotlib
 - Jupyter
 
+Catatan:
+
+- `requirements.txt` dan `requirements_gpu.txt` kini disederhanakan menjadi daftar dependensi inti proyek, bukan snapshot seluruh environment;
+- dependensi turunan akan dipasang otomatis oleh `pip` dari paket-paket utama tersebut.
+
 ### Cara clone repositori ini
 
 Karena repositori memakai Git LFS, alur yang direkomendasikan adalah:
