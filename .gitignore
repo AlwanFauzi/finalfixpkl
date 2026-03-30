@@ -1,0 +1,60 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Local environment files
+.env
+.env.*
+
+# Training outputs and generated artifacts
+runs/
+artifacts/
+outputs/
+
+# Dataset and raw images
+Dataset/
+Catfish_baby_images/
+
+# Model weights and exported binaries
+*.pt
+*.pth
+*.onnx
+*.engine
+*.torchscript
+
+# Python build outputs
+build/
+dist/
+*.egg-info/
+
+# Notebook runtime and profiling leftovers
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
