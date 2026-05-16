@@ -1,11 +1,11 @@
-# Deteksi dan Clustering Ukuran Benih Lele Menggunakan YOLOv8 dan K-Means
+# Deteksi dan Pengelompokan Ukuran Relatif Benih Lele Menggunakan YOLOv8 dan K-Means
 
 ## Ringkasan
 
-Repositori ini mendokumentasikan pipeline computer vision untuk mendeteksi benih lele pada citra dan mengelompokkan ukurannya ke dalam tiga kategori, yaitu `Fries`, `Fingerling`, dan `Juvenile`. Sistem dibangun dengan dua komponen utama:
+Repositori ini mendokumentasikan pipeline computer vision untuk mendeteksi benih lele pada citra dan mengelompokkan ukurannya ke dalam tiga kelompok ukuran relatif, yaitu `Kelompok 1`, `Kelompok 2`, dan `Kelompok 3`. Sistem dibangun dengan dua komponen utama:
 
 1. model deteksi objek YOLOv8 untuk menemukan lokasi benih lele, dan
-2. clustering K-Means berbasis fitur geometri bounding box untuk analisis ukuran.
+2. pengelompokan K-Means berbasis fitur geometri bounding box untuk analisis ukuran relatif.
 
 Secara metodologis, proyek dibagi ke dalam dua jalur yang saling melengkapi:
 
@@ -54,7 +54,7 @@ Pendekatan computer vision memberikan peluang otomatisasi pada dua level:
 - deteksi objek, untuk mengetahui lokasi benih lele pada citra; dan
 - analisis ukuran, untuk mengubah informasi geometrik bounding box menjadi kelompok ukuran yang dapat diinterpretasikan secara operasional.
 
-Proyek ini tidak berhenti pada pelatihan model deteksi, tetapi juga membangun alur analisis ukuran yang lebih kuat secara akademik. Revisi metodologis terpenting pada versi ini adalah penggunaan seluruh anotasi ground truth dataset untuk analisis clustering ukuran, sehingga distribusi ukuran tidak bias terhadap kegagalan prediksi model.
+Proyek ini tidak berhenti pada pelatihan model deteksi, tetapi juga membangun alur pengelompokan ukuran relatif yang lebih kuat secara akademik. Revisi metodologis terpenting pada versi ini adalah penggunaan seluruh anotasi ground truth dataset untuk pengelompokan ukuran relatif, sehingga distribusi ukuran tidak bias terhadap kegagalan prediksi model.
 
 ---
 
@@ -66,7 +66,7 @@ Tujuan proyek ini adalah:
 2. mengevaluasi model pada split validasi dan pengujian;
 3. mengekstraksi fitur ukuran berbasis bounding box;
 4. mengelompokkan ukuran benih menggunakan K-Means;
-5. memetakan cluster ke label ukuran yang bermakna secara praktis; dan
+5. memetakan hasil K-Means ke kelompok ukuran relatif yang bermakna secara praktis; dan
 6. menyediakan hasil inferensi visual untuk kebutuhan analisis dan demonstrasi deployment.
 
 ---
@@ -78,10 +78,10 @@ Perbaikan utama pada versi repositori saat ini meliputi:
 - penambahan evaluasi eksplisit pada split `test`;
 - pembersihan folder `runs` sebelum retraining agar eksperimen tidak tercampur;
 - pemisahan output proyek ke dalam `artifacts/` dan `outputs/`;
-- penambahan evaluasi clustering menggunakan `silhouette`, `Davies-Bouldin`, dan `Calinski-Harabasz`;
-- penambahan interpretasi tekstual hasil clustering;
+- penambahan evaluasi pengelompokan K-Means menggunakan `silhouette`, `Davies-Bouldin`, dan `Calinski-Harabasz`;
+- penambahan interpretasi tekstual hasil pengelompokan ukuran relatif;
 - pemisahan analisis dataset dan inferensi deployment;
-- penggunaan seluruh ground truth boxes untuk clustering dataset penuh;
+- penggunaan seluruh ground truth boxes untuk pengelompokan dataset penuh;
 - publikasi dataset, hasil, dan bobot training melalui Git LFS.
 
 ---
@@ -201,34 +201,34 @@ Ketiga fitur ini dipilih karena:
 
 ---
 
-## 4. Clustering Ukuran dengan K-Means
+## 4. Pengelompokan Ukuran Relatif dengan K-Means
 
-Sebelum clustering, fitur dinormalisasi menggunakan `StandardScaler`.
+Sebelum K-Means dijalankan, fitur dinormalisasi menggunakan `StandardScaler`.
 
-Algoritma clustering yang digunakan:
+Algoritma K-Means yang digunakan:
 
 - model: `KMeans`
-- jumlah cluster: `k = 3`
+- jumlah cluster teknis: `k = 3`
 - `random_state = 42`
 - `n_init = 10`
 
-Cluster kemudian dipetakan ke label ukuran berdasarkan rata-rata area:
+K-Means membentuk tiga kelompok ukuran relatif berdasarkan fitur geometris bounding box, yaitu luas, diagonal, dan rasio aspek. Hasil ini tidak diklaim sebagai kelas biologis. Kelompok kemudian diurutkan berdasarkan rata-rata area:
 
-- area terkecil -> `Fries`
-- area menengah -> `Fingerling`
-- area terbesar -> `Juvenile`
+- area terkecil -> `Kelompok 1`
+- area menengah -> `Kelompok 2`
+- area terbesar -> `Kelompok 3`
 
 ---
 
-## 5. Evaluasi Clustering
+## 5. Evaluasi Pengelompokan K-Means
 
-Evaluasi clustering dilakukan menggunakan tiga metrik:
+Evaluasi pengelompokan K-Means dilakukan menggunakan tiga metrik:
 
 - Silhouette Score
 - Davies-Bouldin Index
 - Calinski-Harabasz Index
 
-Hasil evaluasi clustering terbaru:
+Hasil evaluasi pengelompokan terbaru:
 
 | n_samples | n_clusters | Silhouette | Davies-Bouldin | Calinski-Harabasz |
 |---:|---:|---:|---:|---:|
@@ -236,25 +236,25 @@ Hasil evaluasi clustering terbaru:
 
 Interpretasi:
 
-- `silhouette = 0.4239` menunjukkan kualitas pemisahan cluster pada tingkat cukup baik;
-- `Davies-Bouldin = 0.7956` menunjukkan overlap antar cluster masih terkendali;
-- `Calinski-Harabasz = 2031.3427` mendukung bahwa struktur cluster cukup stabil untuk analisis deskriptif ukuran.
+- `silhouette = 0.4239` menunjukkan kualitas pemisahan kelompok pada tingkat cukup baik;
+- `Davies-Bouldin = 0.7956` menunjukkan overlap antarkelompok masih terkendali;
+- `Calinski-Harabasz = 2031.3427` mendukung bahwa struktur kelompok cukup stabil untuk analisis deskriptif ukuran.
 
 ---
 
-## 6. Interpretasi Hasil Clustering
+## 6. Interpretasi Hasil Pengelompokan Ukuran Relatif
 
-Ringkasan cluster terbaru:
+Ringkasan kelompok terbaru:
 
-- `Fries` atau cluster `1`: `727` sampel atau `29.9%`
-- `Fingerling` atau cluster `2`: `464` sampel atau `19.1%`
-- `Juvenile` atau cluster `0`: `1240` sampel atau `51.0%`
+- `Kelompok 1`: `727` sampel atau `29.9%`, mean area `207261.79` px2
+- `Kelompok 2`: `464` sampel atau `19.1%`, mean area `306572.83` px2
+- `Kelompok 3`: `1240` sampel atau `51.0%`, mean area `438270.98` px2
 
 Interpretasi umum:
 
-- `Fries` memiliki rata-rata area terkecil dan bentuk relatif seimbang;
-- `Fingerling` memiliki area menengah dan cenderung lebih memanjang secara horizontal;
-- `Juvenile` memiliki area terbesar dan mendominasi distribusi anotasi dataset.
+- `Kelompok 1` memiliki rata-rata area terkecil dan bentuk relatif seimbang;
+- `Kelompok 2` memiliki area menengah dan cenderung lebih memanjang secara horizontal;
+- `Kelompok 3` memiliki area terbesar dan mendominasi distribusi anotasi dataset.
 
 Interpretasi tekstual lengkap tersimpan pada:
 
@@ -277,7 +277,7 @@ Alasan akademiknya:
 
 - seluruh sampel berlabel harus ikut terwakili;
 - analisis distribusi ukuran tidak boleh bias terhadap kegagalan deteksi model;
-- clustering dataset dimaksudkan sebagai analisis deskriptif ukuran populasi berlabel.
+- pengelompokan dataset dimaksudkan sebagai analisis deskriptif ukuran populasi berlabel.
 
 ### B. Inferensi deployment
 
@@ -340,19 +340,19 @@ Notebook utama yang menjalankan:
 - evaluasi `valid` dan `test`;
 - inferensi test set;
 - parsing seluruh ground truth dataset;
-- ekstraksi fitur dan clustering;
-- interpretasi cluster;
+- ekstraksi fitur dan pengelompokan ukuran relatif;
+- interpretasi kelompok;
 - inferensi deployment pada `Catfish_baby_images`;
-- pembuatan overlay hasil klasifikasi ukuran.
+- pembuatan overlay hasil pengelompokan ukuran relatif.
 
 ### `clustering.ipynb`
 
 Notebook analisis yang berfokus pada:
 
-- pemuatan artefak clustering;
-- ringkasan distribusi cluster;
-- evaluasi kualitas clustering;
-- interpretasi cluster;
+- pemuatan artefak pengelompokan K-Means;
+- ringkasan distribusi kelompok;
+- evaluasi kualitas pengelompokan K-Means;
+- interpretasi kelompok;
 - visualisasi sebaran dan histogram.
 
 ### `project_helpers.py`
@@ -362,8 +362,8 @@ Modul utilitas yang menangani:
 - pembuatan direktori proyek;
 - pengumpulan indeks gambar dan parsing anotasi;
 - ekstraksi fitur ukuran;
-- evaluasi clustering;
-- interpretasi cluster;
+- evaluasi pengelompokan K-Means;
+- interpretasi kelompok;
 - penyimpanan artefak;
 - pembuatan overlay visual.
 
@@ -450,10 +450,10 @@ Notebook harus dijalankan dari atas ke bawah tanpa melompati sel, karena noteboo
 - menghapus `runs` lama di awal;
 - melatih model ulang;
 - menghasilkan artefak evaluasi;
-- membangun model clustering;
+- membangun model K-Means;
 - membuat hasil inferensi deployment.
 
-## 2. Analisis clustering
+## 2. Analisis pengelompokan ukuran relatif
 
 Setelah notebook utama selesai, jalankan:
 
@@ -482,7 +482,7 @@ Notebook ini membaca artefak dari:
 - `artifacts/dataset_analysis/features_all_dataset.npy`
 - `artifacts/dataset_analysis/classified_sizes_all_dataset.csv`
 
-### Model clustering
+### Model K-Means
 
 - `artifacts/models/scaler_kmeans.pkl`
 - `artifacts/models/kmeans_size.pkl`
@@ -505,9 +505,9 @@ Kekuatan utama proyek ini adalah:
 
 - pipeline end-to-end dari training sampai visualisasi deployment sudah lengkap;
 - evaluasi deteksi tersedia untuk `valid` dan `test`;
-- clustering dataset penuh mencakup seluruh anotasi berlabel;
+- pengelompokan dataset penuh mencakup seluruh anotasi berlabel;
 - output proyek dipisahkan secara rapi antara analisis, model, dan visualisasi;
-- interpretasi cluster tersedia dalam bentuk numerik dan tekstual;
+- interpretasi kelompok tersedia dalam bentuk numerik dan tekstual;
 - repositori GitHub sudah memuat kode, dataset, bobot hasil, dan output sehingga mudah direplikasi.
 
 ---
@@ -516,8 +516,8 @@ Kekuatan utama proyek ini adalah:
 
 Keterbatasan yang masih perlu dicatat:
 
-- clustering masih berbasis fitur geometri bounding box, belum memakai fitur visual ROI yang lebih kaya;
-- pemetaan cluster ke label ukuran masih bertumpu pada rata-rata area, sehingga interpretasi biologisnya perlu validasi ahli;
+- pengelompokan masih berbasis fitur geometri bounding box, belum memakai fitur visual ROI yang lebih kaya;
+- pemetaan hasil K-Means ke kelompok ukuran relatif masih bertumpu pada rata-rata area dan tidak boleh diperlakukan sebagai kelas biologis;
 - masih ada gap performa antara valid dan test pada model deteksi;
 - konversi anotasi polygon ke bounding box dapat menghilangkan sebagian informasi bentuk;
 - ukuran repositori menjadi besar karena memuat data dan hasil penelitian, meskipun telah dibantu Git LFS.
@@ -537,7 +537,7 @@ Konsekuensinya:
 Prinsip pengelolaan file:
 
 - file kode, dokumentasi, dan notebook disimpan sebagai Git biasa;
-- file aset besar seperti gambar, bobot training, model clustering, dan array numerik besar ditangani Git LFS;
+- file aset besar seperti gambar, bobot training, model K-Means, dan array numerik besar ditangani Git LFS;
 - file lingkungan lokal seperti `venv/`, cache Python, dan file editor tetap diabaikan oleh `.gitignore`.
 
 Jika di masa depan strategi repositori berubah, maka:
@@ -565,7 +565,7 @@ Selain itu, mode deterministic CuDNN diaktifkan untuk meningkatkan konsistensi e
 
 ## Etika dan Penggunaan
 
-Hasil clustering dalam proyek ini sebaiknya dipandang sebagai alat bantu analisis, bukan pengganti penuh penilaian ahli budidaya. Penggunaan hasil untuk keputusan operasional sebaiknya tetap mempertimbangkan:
+Hasil pengelompokan K-Means dalam proyek ini sebaiknya dipandang sebagai alat bantu analisis, bukan pengganti penuh penilaian ahli budidaya. Penggunaan hasil untuk keputusan operasional sebaiknya tetap mempertimbangkan:
 
 - kualitas citra;
 - kondisi pengambilan gambar;

@@ -31,7 +31,7 @@ PROJECT_PATHS = {
 }
 
 FEATURE_COLUMNS = ["area_px", "diag_px", "aspect_ratio"]
-DEFAULT_SIZE_LABELS = ("Fries", "Fingerling", "Juvenile")
+DEFAULT_SIZE_LABELS = ("Kelompok 1", "Kelompok 2", "Kelompok 3")
 
 
 def _to_path(path: str | Path) -> Path:
@@ -211,11 +211,12 @@ def evaluate_clustering(X_scaled: np.ndarray, labels: np.ndarray) -> pd.DataFram
 
 def build_cluster_summary(df: pd.DataFrame) -> pd.DataFrame:
     work, _ = build_feature_matrix(df)
-    if "size_class" not in work.columns:
-        work["size_class"] = work["cluster"].map(lambda value: f"Cluster {value}")
+    if "size_group" not in work.columns:
+        mapping = build_size_mapping(work)
+        work["size_group"] = work["cluster"].map(mapping)
 
     summary = (
-        work.groupby(["cluster", "size_class"], dropna=False)
+        work.groupby(["cluster", "size_group"], dropna=False)
         .agg(
             sample_count=("cluster", "size"),
             mean_width_px=("width_px", "mean"),
@@ -247,16 +248,16 @@ def build_cluster_interpretation(summary: pd.DataFrame) -> list[str]:
     if summary.empty:
         return ["Belum ada data cluster untuk diinterpretasikan."]
 
-    ordered = " < ".join(
-        f"{row.size_class} (cluster {int(row.cluster)})"
-        for row in summary.itertuples(index=False)
-    )
+    if "size_group" not in summary.columns and "size_class" in summary.columns:
+        summary = summary.rename(columns={"size_class": "size_group"})
+
+    ordered = " < ".join(str(row.size_group) for row in summary.itertuples(index=False))
     lines = [f"Urutan ukuran berdasarkan rata-rata area adalah {ordered}."]
 
     for row in summary.itertuples(index=False):
         lines.append(
             (
-                f"{row.size_class} pada cluster {int(row.cluster)} mencakup {int(row.sample_count)} deteksi "
+                f"{row.size_group} mencakup {int(row.sample_count)} objek "
                 f"({row.share:.1%}) dengan rata-rata area {row.mean_area_px:,.0f} px2, median "
                 f"{row.median_area_px:,.0f} px2, rentang {row.min_area_px:,.0f}-{row.max_area_px:,.0f} px2, "
                 f"dan {_aspect_ratio_note(row.mean_aspect_ratio)}."
@@ -333,13 +334,28 @@ def generate_size_overlays(
     output_folder: str | Path,
     clear_existing: bool = False,
 ) -> tuple[Path, int]:
+    work = df.copy()
+    if "area_px" not in work.columns and {"width_px", "height_px"}.issubset(work.columns):
+        work, _ = build_feature_matrix(work)
+    if "size_group" not in work.columns:
+        try:
+            mapping = build_size_mapping(work)
+            work["size_group"] = work["cluster"].map(mapping)
+        except (KeyError, ValueError):
+            if "size_class" in work.columns:
+                work["size_group"] = work["size_class"]
+            elif "cluster" in work.columns:
+                work["size_group"] = work["cluster"].map(lambda value: f"Kelompok {value}")
+            else:
+                work["size_group"] = "Kelompok"
+
     output_dir = _to_path(output_folder)
     if clear_existing and output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     missing_images = 0
-    for filename, group in df.groupby("filename", sort=True):
+    for filename, group in work.groupby("filename", sort=True):
         image_path = Path(group["filepath"].iloc[0])
         image = cv2.imread(str(image_path))
         if image is None:
@@ -348,7 +364,7 @@ def generate_size_overlays(
 
         for row in group.itertuples(index=False):
             x1, y1, x2, y2 = map(int, [row.x1, row.y1, row.x2, row.y2])
-            label = str(row.size_class)
+            label = str(row.size_group)
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(
                 image,

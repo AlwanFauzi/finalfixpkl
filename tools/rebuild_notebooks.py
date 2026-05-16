@@ -278,8 +278,8 @@ def build_train_notebook() -> nbf.NotebookNode:
             ),
             md(
                 """
-                # Dataset-Wide Clustering Preparation
-                Untuk memastikan seluruh sampel berlabel terwakili dalam analisis ukuran, tahap clustering memakai bounding box anotasi ground truth dari seluruh dataset (`train`, `valid`, `test`).
+                # Dataset-Wide Size Grouping Preparation
+                Untuk memastikan seluruh sampel berlabel terwakili dalam pengelompokan ukuran relatif, tahap K-Means memakai bounding box anotasi ground truth dari seluruh dataset (`train`, `valid`, `test`).
                 """
             ),
             code(
@@ -312,7 +312,7 @@ def build_train_notebook() -> nbf.NotebookNode:
             ),
             code(
                 """
-                # Scaling + KMeans + evaluasi clustering
+                # Scaling + KMeans + evaluasi pengelompokan ukuran relatif
                 FEATURES_NPY = DATASET_ANALYSIS_DIR / "features_all_dataset.npy"
                 SCALER_PATH = MODEL_ARTIFACTS_DIR / "scaler_kmeans.pkl"
                 KMEANS_PATH = MODEL_ARTIFACTS_DIR / "kmeans_size.pkl"
@@ -343,7 +343,7 @@ def build_train_notebook() -> nbf.NotebookNode:
             ),
             code(
                 """
-                # Mapping cluster -> label + interpretasi clustering
+                # Mapping cluster K-Means -> kelompok ukuran relatif + interpretasi
                 dataset_boxes_df = pd.read_csv(DATASET_ANALYSIS_DIR / "dataset_boxes_all.csv")
                 feature_df, X = build_feature_matrix(dataset_boxes_df)
                 scaler = joblib.load(MODEL_ARTIFACTS_DIR / "scaler_kmeans.pkl")
@@ -353,7 +353,7 @@ def build_train_notebook() -> nbf.NotebookNode:
                 dataset_boxes_df["cluster"] = clusters
                 dataset_boxes_df["area_px"] = feature_df["area_px"]
                 mapping = build_size_mapping(dataset_boxes_df)
-                dataset_boxes_df["size_class"] = dataset_boxes_df["cluster"].map(mapping)
+                dataset_boxes_df["size_group"] = dataset_boxes_df["cluster"].map(mapping)
                 classified_path = DATASET_ANALYSIS_DIR / "classified_sizes_all_dataset.csv"
                 dataset_boxes_df.to_csv(classified_path, index=False)
 
@@ -367,16 +367,16 @@ def build_train_notebook() -> nbf.NotebookNode:
                     EVALUATION_DIR,
                 )
 
-                print("Cluster mapping:", mapping)
+                print("Pemetaan cluster K-Means ke kelompok:", mapping)
                 display(cluster_summary)
                 if "source_split" in dataset_boxes_df.columns:
                     display(
-                        dataset_boxes_df.groupby(["source_split", "size_class"])
+                        dataset_boxes_df.groupby(["source_split", "size_group"])
                         .size()
                         .rename("count")
                         .reset_index()
                     )
-                print("Interpretasi hasil clustering:")
+                print("Interpretasi hasil pengelompokan ukuran relatif:")
                 for line in interpretation_lines:
                     print("-", line)
                 print("File utama tersimpan:", classified_path)
@@ -385,7 +385,7 @@ def build_train_notebook() -> nbf.NotebookNode:
             ),
             code(
                 """
-                # Inferensi dan klasifikasi ukuran untuk Catfish_baby_images
+                # Inferensi dan pengelompokan ukuran relatif untuk Catfish_baby_images
                 RAW_DETECTIONS_CSV = RAW_INFERENCE_DIR / "detections_raw_images.csv"
                 RAW_CLASSIFIED_CSV = RAW_INFERENCE_DIR / "classified_sizes_raw_images.csv"
                 raw_image_index = list_image_records(RAW_INPUT_DIR, source_name="raw_images")
@@ -453,28 +453,37 @@ def build_train_notebook() -> nbf.NotebookNode:
                 raw_feature_df, raw_X = build_feature_matrix(raw_detections_df)
                 scaler = joblib.load(MODEL_ARTIFACTS_DIR / "scaler_kmeans.pkl")
                 kmeans = joblib.load(MODEL_ARTIFACTS_DIR / "kmeans_size.pkl")
+                classified_sizes_df = pd.read_csv(DATASET_ANALYSIS_DIR / "classified_sizes_all_dataset.csv")
+                if "size_group" not in classified_sizes_df.columns:
+                    classified_feature_df, _ = build_feature_matrix(classified_sizes_df)
+                    mapping_source = classified_sizes_df.copy()
+                    mapping_source["area_px"] = classified_feature_df["area_px"]
+                    classified_sizes_df["size_group"] = classified_sizes_df["cluster"].map(
+                        build_size_mapping(mapping_source)
+                    )
+
                 mapping = (
-                    pd.read_csv(DATASET_ANALYSIS_DIR / "classified_sizes_all_dataset.csv")[["cluster", "size_class"]]
+                    classified_sizes_df[["cluster", "size_group"]]
                     .drop_duplicates()
                     .sort_values("cluster")
-                    .set_index("cluster")["size_class"]
+                    .set_index("cluster")["size_group"]
                     .to_dict()
                 )
                 raw_clusters = kmeans.predict(scaler.transform(raw_X))
 
                 raw_detections_df["cluster"] = raw_clusters
                 raw_detections_df["area_px"] = raw_feature_df["area_px"]
-                raw_detections_df["size_class"] = raw_detections_df["cluster"].map(mapping)
+                raw_detections_df["size_group"] = raw_detections_df["cluster"].map(mapping)
                 raw_detections_df.to_csv(RAW_CLASSIFIED_CSV, index=False)
 
                 print("Deteksi raw images tersimpan di:", RAW_DETECTIONS_CSV)
-                print("Klasifikasi raw images tersimpan di:", RAW_CLASSIFIED_CSV)
+                print("Pengelompokan raw images tersimpan di:", RAW_CLASSIFIED_CSV)
                 print(f"Gambar raw dengan minimal 1 deteksi: {len(detected_raw_paths)} dari {len(raw_paths)}")
                 """
             ),
             code(
                 """
-                # Generate overlay dengan label ukuran untuk Catfish_baby_images
+                # Generate overlay dengan label kelompok ukuran relatif untuk Catfish_baby_images
                 OUTPUT_FOLDER = RAW_OVERLAY_DIR
                 classified_df = pd.read_csv(RAW_INFERENCE_DIR / "classified_sizes_raw_images.csv")
                 output_folder, missing_images = generate_size_overlays(
@@ -496,8 +505,8 @@ def build_clustering_notebook() -> nbf.NotebookNode:
         cells=[
             md(
                 """
-                # Analisis Clustering Ukuran Benih Lele
-                Notebook ini memuat ringkasan cluster, evaluasi kualitas clustering, dan interpretasi hasil berdasarkan seluruh bounding box anotasi ground truth pada dataset `train`, `valid`, dan `test`.
+                # Analisis Pengelompokan Ukuran Relatif Benih Lele
+                Notebook ini memuat ringkasan kelompok, evaluasi kualitas K-Means, dan interpretasi hasil berdasarkan seluruh bounding box anotasi ground truth pada dataset `train`, `valid`, dan `test`.
                 """
             ),
             code(
@@ -514,6 +523,7 @@ def build_clustering_notebook() -> nbf.NotebookNode:
                     build_cluster_interpretation,
                     build_cluster_summary,
                     build_feature_matrix,
+                    build_size_mapping,
                     evaluate_clustering,
                 )
 
@@ -531,20 +541,21 @@ def build_clustering_notebook() -> nbf.NotebookNode:
                 kmeans = joblib.load(KMEANS_PATH)
                 X_scaled = scaler.transform(X)
                 df["cluster"] = kmeans.predict(X_scaled)
+                legacy_size_column = "size_" + "class"
 
-                if "size_class" not in df.columns:
-                    cluster_means = feature_df.assign(cluster=df["cluster"]).groupby("cluster")["area_px"].mean().sort_values()
-                    mapping = {
-                        cluster_means.index[0]: "Fries",
-                        cluster_means.index[1]: "Fingerling",
-                        cluster_means.index[2]: "Juvenile",
-                    }
-                    df["size_class"] = df["cluster"].map(mapping)
+                if "size_group" not in df.columns:
+                    mapping_source = feature_df.copy()
+                    mapping_source["cluster"] = df["cluster"]
+                    mapping_source["area_px"] = feature_df["area_px"]
+                    mapping = build_size_mapping(mapping_source)
+                    df["size_group"] = df["cluster"].map(mapping)
+                if legacy_size_column in df.columns:
+                    df = df.drop(columns=[legacy_size_column])
 
                 print(f"Classified dataset file: {CLASSIFIED_PATH}")
                 print(f"Evaluation folder: {EVALUATION_DIR}")
                 print(f"Jumlah deteksi: {len(df)}")
-                print(f"Cluster unik: {sorted(df['cluster'].unique())}")
+                print(f"ID cluster K-Means unik: {sorted(df['cluster'].unique())}")
                 if "source_split" in df.columns:
                     display(
                         df.groupby("source_split")
@@ -561,7 +572,7 @@ def build_clustering_notebook() -> nbf.NotebookNode:
                 interpretation_lines = build_cluster_interpretation(cluster_summary)
 
                 display(cluster_summary)
-                print("Interpretasi hasil clustering:")
+                print("Interpretasi hasil pengelompokan ukuran relatif:")
                 for line in interpretation_lines:
                     print("-", line)
                 """
@@ -579,9 +590,9 @@ def build_clustering_notebook() -> nbf.NotebookNode:
                 if silhouette >= 0.5:
                     silhouette_note = "pemisahan antarkelompok kuat"
                 elif silhouette >= 0.25:
-                    silhouette_note = "pemisahan cluster cukup baik"
+                    silhouette_note = "pemisahan kelompok cukup baik"
                 else:
-                    silhouette_note = "pemisahan cluster masih lemah"
+                    silhouette_note = "pemisahan kelompok masih lemah"
 
                 print(f"Silhouette score = {silhouette:.3f}, artinya {silhouette_note}.")
                 print(f"Davies-Bouldin score = {db_index:.3f}; semakin kecil nilainya semakin baik.")
@@ -601,8 +612,8 @@ def build_clustering_notebook() -> nbf.NotebookNode:
 
                 plt.xlabel("Bounding Box Width (pixel)")
                 plt.ylabel("Bounding Box Height (pixel)")
-                plt.title("Visualisasi Distribusi Cluster Ukuran Benih Lele")
-                plt.colorbar(scatter, label="Cluster")
+                plt.title("Visualisasi Distribusi Kelompok Ukuran Relatif Benih Lele")
+                plt.colorbar(scatter, label="Kelompok")
                 plt.grid(True)
                 plt.tight_layout()
                 plt.show()
@@ -610,13 +621,13 @@ def build_clustering_notebook() -> nbf.NotebookNode:
             ),
             code(
                 """
-                plot_order = cluster_summary["size_class"].tolist()
+                plot_order = cluster_summary["size_group"].tolist()
 
                 plt.figure(figsize=(8, 6))
-                df.boxplot(column="area_px", by="size_class", grid=True)
-                plt.xlabel("Size Class")
+                df.boxplot(column="area_px", by="size_group", grid=True)
+                plt.xlabel("Kelompok Ukuran Relatif")
                 plt.ylabel("Bounding Box Area (pixel2)")
-                plt.title("Distribusi Ukuran Benih Lele Berdasarkan Cluster")
+                plt.title("Distribusi Area Bounding Box Berdasarkan Kelompok Ukuran Relatif")
                 plt.suptitle("")
                 plt.tight_layout()
                 plt.show()
@@ -626,19 +637,19 @@ def build_clustering_notebook() -> nbf.NotebookNode:
                 """
                 plt.figure(figsize=(8, 6))
 
-                for cluster_id in sorted(df["cluster"].unique()):
-                    subset = df[df["cluster"] == cluster_id]
-                    label = subset["size_class"].mode().iloc[0]
+                for row in cluster_summary.itertuples(index=False):
+                    subset = df[df["cluster"] == row.cluster]
+                    label = row.size_group
                     plt.hist(
                         subset["area_px"],
                         bins=20,
                         alpha=0.5,
-                        label=f"Cluster {cluster_id} - {label}",
+                        label=label,
                     )
 
                 plt.xlabel("Bounding Box Area (pixel2)")
                 plt.ylabel("Jumlah Sampel")
-                plt.title("Histogram Distribusi Ukuran Benih Lele per Cluster")
+                plt.title("Histogram Distribusi Area Bounding Box per Kelompok Ukuran Relatif")
                 plt.legend()
                 plt.grid(True)
                 plt.tight_layout()
