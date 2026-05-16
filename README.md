@@ -47,7 +47,7 @@ Konfigurasi Git LFS tersimpan pada file `.gitattributes`. Oleh sebab itu, penggu
 
 ## Latar Belakang
 
-Klasifikasi ukuran benih lele merupakan aspek penting dalam budidaya karena ukuran ikan berhubungan langsung dengan kepadatan tebar, strategi pemberian pakan, dan manajemen pemeliharaan. Dalam praktik manual, pengukuran populasi benih dalam jumlah besar membutuhkan tenaga, waktu, dan konsistensi yang tinggi.
+Pengelompokan ukuran relatif benih lele merupakan aspek penting dalam budidaya karena ukuran ikan berhubungan langsung dengan kepadatan tebar, strategi pemberian pakan, dan manajemen pemeliharaan. Dalam praktik manual, pengukuran populasi benih dalam jumlah besar membutuhkan tenaga, waktu, dan konsistensi yang tinggi.
 
 Pendekatan computer vision memberikan peluang otomatisasi pada dua level:
 
@@ -212,7 +212,7 @@ Algoritma K-Means yang digunakan:
 - `random_state = 42`
 - `n_init = 10`
 
-K-Means membentuk tiga kelompok ukuran relatif berdasarkan fitur geometris bounding box, yaitu luas, diagonal, dan rasio aspek. Hasil ini tidak diklaim sebagai kelas biologis. Kelompok kemudian diurutkan berdasarkan rata-rata area:
+K-Means membentuk tiga kelompok ukuran relatif berdasarkan fitur geometris bounding box, yaitu luas, diagonal, dan rasio aspek. Hasil ini tidak diklaim sebagai kategori biologis berbasis standar ukuran. Kelompok kemudian diurutkan berdasarkan rata-rata area:
 
 - area terkecil -> `Kelompok 1`
 - area menengah -> `Kelompok 2`
@@ -517,7 +517,7 @@ Kekuatan utama proyek ini adalah:
 Keterbatasan yang masih perlu dicatat:
 
 - pengelompokan masih berbasis fitur geometri bounding box, belum memakai fitur visual ROI yang lebih kaya;
-- pemetaan hasil K-Means ke kelompok ukuran relatif masih bertumpu pada rata-rata area dan tidak boleh diperlakukan sebagai kelas biologis;
+- pemetaan hasil K-Means ke kelompok ukuran relatif masih bertumpu pada rata-rata area dan tidak boleh diperlakukan sebagai kategori biologis berbasis standar ukuran;
 - masih ada gap performa antara valid dan test pada model deteksi;
 - konversi anotasi polygon ke bounding box dapat menghilangkan sebagian informasi bentuk;
 - ukuran repositori menjadi besar karena memuat data dan hasil penelitian, meskipun telah dibantu Git LFS.
